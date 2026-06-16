@@ -1,0 +1,79 @@
+services:
+  # ── CPU (padrão) ────────────────────────────────────────────────────────────
+  bitnet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bitnet:latest
+    container_name: bitnet
+    volumes:
+      - ./models:/models          # modelos persistem no host
+    environment:
+      - HF_HOME=/models/.cache    # cache do HuggingFace dentro do volume
+    stdin_open: true
+    tty: true
+
+  # ── Servidor de inferência HTTP (interno — sem porta exposta no host) ────────
+  # Ative com: docker compose --profile server up
+  bitnet-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bitnet:latest
+    container_name: bitnet-server
+    profiles: ["server"]
+    command: server
+    volumes:
+      - ./models:/models
+    environment:
+      - HF_HOME=/models/.cache
+    restart: unless-stopped
+
+  # ── API de chat + Swagger (porta 3002) ────────────────────────────────────
+  # Chat:    http://localhost:3002
+  # Swagger: http://localhost:3002/docs
+  # Ative com: docker compose --profile server up
+  bitnet-api:
+    build:
+      context: ./api
+    image: bitnet-api:latest
+    container_name: bitnet-api
+    profiles: ["server"]
+    ports:
+      - "3002:3002"
+    environment:
+      - BITNET_URL=http://bitnet-server:8080
+      - DB_PATH=/data/bitnet.db
+    volumes:
+      - bitnet-data:/data
+    depends_on:
+      - bitnet-server
+    restart: unless-stopped
+
+  # ── GPU (NVIDIA) ────────────────────────────────────────────────────────────
+  # Requer: nvidia-container-toolkit instalado no host
+  # Ative com: docker compose --profile gpu up bitnet-gpu
+  bitnet-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: bitnet:gpu
+    container_name: bitnet-gpu
+    profiles: ["gpu"]
+    volumes:
+      - ./models:/models
+    environment:
+      - HF_HOME=/models/.cache
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+
+volumes:
+  bitnet-data:       # Persiste o banco SQLite das conversas do chat
