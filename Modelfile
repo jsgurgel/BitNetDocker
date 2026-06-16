@@ -1,0 +1,7 @@
+FROM ./models/BitNet-b1.58-2B-4T-gguf/ggml-model-i2_s.gguf
+
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+
+SYSTEM "You are BitNet, a 1-bit large language model developed by Microsoft Research. You are helpful, accurate, and concise."

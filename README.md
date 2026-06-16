@@ -191,6 +191,61 @@ print(response.choices[0].message.content)
 
 ---
 
+## Integração com extensões de IA no VS Code
+
+O servidor BitNet expõe uma API OpenAI-compatible em `http://localhost:3002/v1`, o que permite integração direta com as principais extensões de IA do VS Code. Certifique-se de que os containers estão rodando antes de configurar:
+
+```bash
+docker compose --profile server up -d
+```
+
+### Continue (`Continue.continue`)
+
+Edite `~/.continue/config.json`:
+
+```json
+{
+  "models": [
+    {
+      "title": "BitNet Local",
+      "provider": "openai",
+      "model": "bitnet",
+      "apiBase": "http://localhost:3002/v1",
+      "apiKey": "none"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "BitNet Autocomplete",
+    "provider": "openai",
+    "model": "bitnet",
+    "apiBase": "http://localhost:3002/v1",
+    "apiKey": "none"
+  }
+}
+```
+
+### Ollama Cloud (`JKagiDesignsLLC.ollama-cloud`)
+
+A extensão suporta endpoints OpenAI-compatible via `openAiBaseUrl`. Adicione ao `settings.json` do VS Code (`Ctrl+Shift+P` → *Open User Settings JSON*):
+
+```json
+{
+  "ollamaCloud.apiProvider": "openai",
+  "ollamaCloud.openAiBaseUrl": "http://localhost:3002/v1",
+  "ollamaCloud.openAiApiKey": "none",
+  "ollamaCloud.chatModel": "bitnet",
+  "ollamaCloud.autocompleteModel": "bitnet"
+}
+```
+
+> Para voltar ao Ollama Cloud, basta trocar `apiProvider` para `"ollama"` e restaurar os modelos originais.
+
+### GitHub Copilot Chat
+
+O suporte a endpoints customizados no GitHub Copilot está disponível apenas em planos **Enterprise**. Para contas pessoais, use o **Continue** como alternativa com as mesmas funcionalidades de chat e autocomplete.
+
+---
+
 ## GPU (NVIDIA)
 
 > Requer `nvidia-container-toolkit` instalado no host.
